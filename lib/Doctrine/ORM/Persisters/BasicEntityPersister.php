@@ -1229,6 +1229,17 @@ class BasicEntityPersister
             
             $conditionSql .= (is_array($value)) ? ' IN (?)' : (($value === null) ? ' IS NULL' : ' = ?');
         }
+
+        $filterSql = '';
+        foreach ($this->_em->getEnabledFilters() as $filter)
+        {
+            $filterSql .= ($filterSql == '' ? '' : ' AND ') 
+                        . $filter->addFilterConstraint($this->_class, $this->_getSQLTableAlias($this->_class->name));
+        }
+        if ($filterSql) {
+            $conditionSql = $conditionSql ? "($conditionSql) AND $filterSql" : $filterSql;
+        }
+        
         return $conditionSql;
     }
 
