@@ -24,7 +24,8 @@ use Doctrine\Common\Cache\Cache,
     Doctrine\Common\Annotations\AnnotationRegistry,
     Doctrine\Common\Annotations\AnnotationReader,
     Doctrine\ORM\Mapping\Driver\Driver,
-    Doctrine\ORM\Mapping\Driver\AnnotationDriver;
+    Doctrine\ORM\Mapping\Driver\AnnotationDriver,
+    Doctrine\ORM\Query\Filter;
 
 /**
  * Configuration container for all configuration options of Doctrine.
@@ -516,4 +517,60 @@ class Configuration extends \Doctrine\DBAL\Configuration
         }
         return $this->_attributes['classMetadataFactoryName'];
     }
+    
+    /**
+     * Adds filter to configuration
+     * 
+     * @param string $name Name of the filter
+     * @param string $className Filter implementing class (have to be extended from SQLFilter
+     * @throws Filter\FilterException if the provided class name does not exists or is not child of SQLFilter
+     */
+    public function addFilter($name, $className)
+    {
+        if (!class_exists($className)) {
+            throw Filter\FilterException::filterClassNotFound($className);
+        }
+        if (!is_subclass_of($className, 'Doctrine\ORM\Query\Filter\SQLFilter')) {
+            throw Filter\FilterException::invalidFilterClassParent($className);
+        }
+        if (!isset($this->_attributes['filters'])) {
+            $this->_attributes['filters'] = array();
+        }
+        $this->_attributes['filters'][$name] = $className;
+    }
+    
+    /**
+     * Adds filters to configuration
+     * 
+     * @param array $filters 
+     * @throws Filter\FilterException if the provided class name does not exists or is not child of SQLFilter
+     */
+    public function addFilters(array $filters)
+    {
+        if (!isset($this->_attributes['filters'])) {
+            $this->_attributes['filters'] = array();
+        }        
+        foreach ($filters as $name => $className)
+        {
+            $this->addFilter($name, $className);
+        }
+    }
+    
+    /**
+     * Returns class name of filter identified by given name
+     * 
+     * @param  string $name Filter name
+     * @return string Class name
+     * @throws Filter\FilterException if the filter with given name does not exist
+     */
+    public function getFilterClassName($name)
+    {
+        if (!isset($this->_attributes['filters'])) {
+            $this->_attributes['filters'] = array();
+        }        
+        if (!isset($this->_attributes['filters'][$name])) {
+            throw Filter\FilterException::filterClassWithNameNotFound($name);
+        }
+        return $this->_attributes['filters'][$name];
+    }    
 }

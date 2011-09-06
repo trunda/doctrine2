@@ -310,6 +310,25 @@ class SqlWalker implements TreeWalker
         }
         return $sql;
     }
+    
+    /**
+     * Generates conditions from SQL filters 
+     * 
+     * @param  array $dqlAliases
+     * @return string SQL conditions
+     */
+    private function _generateFilterConditionSQL(array $dqlAliases)
+    {
+        $sql = '';
+        foreach ($dqlAliases as $dqlAlias) {
+            $class = $this->_queryComponents[$dqlAlias]['metadata'];
+            
+            foreach ($this->_em->getEnabledFilters() as $filter) {                
+                $sql .= ($sql == '' ? '' : ' AND ') . $filter->addFilterConstraint($class, $this->getSQLTableAlias($class->table['name'], $dqlAlias));
+            }            
+        }
+        return $sql;
+    }    
 
     /**
      * Generates a discriminator column SQL condition for the class with the given DQL alias.
@@ -1467,15 +1486,25 @@ class SqlWalker implements TreeWalker
      */
     public function walkWhereClause($whereClause)
     {
-        $condSql = null !== $whereClause ? $this->walkConditionalExpression($whereClause->conditionalExpression) : '';
-        $discrSql = $this->_generateDiscriminatorColumnConditionSql($this->_rootAliases);
-
-        if ($condSql) {
-            return ' WHERE ' . (( ! $discrSql) ? $condSql : '(' . $condSql . ') AND ' . $discrSql);
-        } else if ($discrSql) {
-            return ' WHERE ' . $discrSql;
+        $conds = array();
+        if (!is_null($whereClause)) {
+            $conds[] = $this->walkConditionalExpression($whereClause->conditionalExpression);
+        }        
+        if ($discrSql = $this->_generateDiscriminatorColumnConditionSql($this->_rootAliases)) {
+            $conds[] = $discrSql;
         }
-
+        if ($filterSql = $this->_generateFilterConditionSQL($this->_rootAliases)) {
+            $conds[] = $filterSql;
+        }
+        if (count($conds) !== 0) {
+            $sql = '';
+            for ($i = 0; $i < count($conds); $i++) {
+                $encapsulate = ($i + 1) < count($conds);
+                $cond = $encapsulate ? "($conds[$i])" : $conds[$i];
+                $sql .= (($i == 0) ? '' : ' AND ') . $cond;
+            }
+            return ' WHERE ' . $sql;
+        }
         return '';
     }
 

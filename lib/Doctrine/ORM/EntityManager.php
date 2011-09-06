@@ -109,6 +109,13 @@ class EntityManager implements ObjectManager
      * @var bool
      */
     private $closed = false;
+    
+    /**
+     * The enabled sql filters. One instance per name
+     * 
+     * @var array
+     */
+    private $enabledFilters = array();
 
     /**
      * Creates a new EntityManager that operates on the given database connection
@@ -136,6 +143,43 @@ class EntityManager implements ObjectManager
                 $config->getAutoGenerateProxyClasses());
     }
 
+    /**
+     * Returns all enabled filters
+     * 
+     * @return array
+     */
+    public function getEnabledFilters()
+    {
+        return $this->enabledFilters;        
+    }
+
+    /**
+     * Enabled filter by name. Filter is finded in configuration.
+     * 
+     * @param  string $name Name of the filter
+     * @return Query\Filter\SQLFilter
+     */
+    public function enableFilter($name)
+    {
+        if (!isset($this->enabledFilters[$name])) {
+            $class = $this->getConfiguration()->getFilterClassName($name);
+            $instance = new $class($this->getConnection());
+            $this->enabledFilters[$name] = $instance;
+        }
+        return $this->enabledFilters[$name];
+    }
+    
+    /**
+     * Disabling filter 
+     * 
+     * @param type $name Name of the filter to be disabled
+     */
+    public function disableFilter($name)
+    {
+        unset($this->enabledFilters[$name]);
+    }    
+    
+        
     /**
      * Gets the database connection object used by the EntityManager.
      *
