@@ -547,11 +547,7 @@ class Configuration extends \Doctrine\DBAL\Configuration
      */
     public function addFilters(array $filters)
     {
-        if (!isset($this->_attributes['filters'])) {
-            $this->_attributes['filters'] = array();
-        }        
-        foreach ($filters as $name => $className)
-        {
+        foreach ($filters as $name => $className) {
             $this->addFilter($name, $className);
         }
     }
