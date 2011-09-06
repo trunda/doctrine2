@@ -569,4 +569,26 @@ class Configuration extends \Doctrine\DBAL\Configuration
         }
         return $this->_attributes['filters'][$name];
     }    
+    
+    /**
+     * Sets the defaul repository class
+     * 
+     * @param string $class 
+     */
+    public function setDefaultRepositoryClass($class)
+    {
+        $this->_attributes['defaultRepositoryClass'] = $class;
+    }
+    
+    /**
+     * Returns the default repository class
+     * 
+     * @return string
+     */
+    public function getDefaultRepositoryClass()
+    {
+        return isset($this->_attributes['defaultRepositoryClass']) 
+                ? $this->_attributes['defaultRepositoryClass']  
+                : 'Doctrine\ORM\EntityRepository';
+    }
 }
